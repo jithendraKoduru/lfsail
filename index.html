@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salesforce Agentforce Development Flow</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Salesforce Sans', Arial, sans-serif;
+            background: linear-gradient(180deg, #032d60 0%, #0176d3 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            font-size: 3em;
+            margin-bottom: 20px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .flow-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            align-items: center;
+            position: relative;
+        }
+
+        .dual-source-container {
+            display: flex;
+            gap: 30px;
+            width: 100%;
+            max-width: 1200px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .stage {
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            width: 100%;
+            max-width: 800px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0.4;
+            transform: scale(0.95);
+            position: relative;
+            border: 1px solid #e5e5e5;
+        }
+
+        .stage.source {
+            max-width: 550px;
+            flex: 1;
+            min-width: 450px;
+        }
+
+        .stage.active {
+            opacity: 1;
+            transform: scale(1);
+            box-shadow: 0 8px 24px rgba(1,118,211,0.2);
+            border-color: #0176d3;
+        }
+
+        .stage.completed {
+            opacity: 0.7;
+            transform: scale(0.98);
+        }
+
+        .stage:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+
+        .stage-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f3f3f3;
+        }
+
+        .stage-number {
+            width: 56px;
+            height: 56px;
+            border-radius: 8px;
+            background: #0176d3;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .stage-title-container {
+            flex: 1;
+        }
+
+        .stage-title {
+            font-size: 1.75em;
+            color: #032d60;
+            font-weight: 700;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .stage.source .stage-title {
+            font-size: 1.5em;
+        }
+
+        .agentforce-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #7e3af2 0%, #9f7aea 100%);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.5em;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(126, 58, 242, 0.3);
+        }
+
+        .agentforce-logo {
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .stage-description {
+            color: #3e3e3c;
+            font-size: 1.1em;
+            line-height: 1.7;
+            margin-bottom: 16px;
+        }
+
+        .stage-details {
+            background: #fafaf9;
+            border-radius: 8px;
+            padding: 24px;
+            margin-top: 20px;
+            display: none;
+            border-left: 4px solid #0176d3;
+        }
+
+        .stage.active .stage-details {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stage-details strong {
+            color: #032d60;
+            font-size: 1.1em;
+            font-weight: 700;
+        }
+
+        .stage-details ul {
+            color: #3e3e3c;
+        }
+
+        .tools-list {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        .tool {
+            background: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: 2px solid #0176d3;
+            color: #0176d3;
+            font-weight: 600;
+            font-size: 0.9em;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tool:hover {
+            background: #0176d3;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(1, 118, 211, 0.3);
+        }
+
+        .tool-logo {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tool-logo svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .arrow {
+            width: 0;
+            height: 0;
+            border-left: 30px solid transparent;
+            border-right: 30px solid transparent;
+            border-top: 30px solid rgba(255,255,255,0.4);
+            opacity: 0.4;
+            transition: all 0.3s ease;
+        }
+
+        .dual-arrows {
+            display: flex;
+            gap: 100px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .arrow.active {
+            opacity: 1;
+            border-top-color: white;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .controls {
+            display: flex;
+            gap: 16px;
+            margin-top: 40px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: white;
+            color: #0176d3;
+            border: 2px solid white;
+            padding: 14px 32px;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            font-family: 'Salesforce Sans', Arial, sans-serif;
+        }
+
+        button:hover {
+            background: #f3f3f3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        button:disabled:hover {
+            background: white;
+            transform: none;
+        }
+
+        #resetBtn {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+
+        #resetBtn:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .status-badge {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            padding: 6px 16px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-badge.pending {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .status-badge.active {
+            background: #2e844a;
+            color: white;
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-badge.completed {
+            background: #706e6b;
+            color: white;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        .icon {
+            font-size: 1.5em;
+        }
+
+        .highlight {
+            color: #0176d3;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: white;
+            font-size: 1.3em;
+            margin-bottom: 40px;
+            opacity: 0.95;
+            font-weight: 300;
+        }
+
+        .completion-message {
+            background: white;
+            border-radius: 12px;
+            padding: 48px;
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto;
+            display: none;
+            animation: fadeIn 0.5s ease;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+
+        .completion-message.show {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .completion-icon {
+            font-size: 4em;
+            margin-bottom: 24px;
+        }
+
+        .completion-message h2 {
+            color: #032d60;
+            font-weight: 700;
+            font-size: 2em;
+            margin-bottom: 16px;
+        }
+
+        .completion-message p {
+            font-size: 1.2em;
+            color: #3e3e3c;
+            line-height: 1.7;
+            margin-bottom: 32px;
+        }
+
+        .completion-message button {
+            background: #0176d3;
+            color: white;
+            border: none;
+            font-size: 1.1em;
+        }
+
+        .completion-message button:hover {
+            background: #014486;
+        }
+
+        @media (max-width: 1024px) {
+            .dual-source-container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .stage.source {
+                max-width: 800px;
+            }
+
+            h1 {
+                font-size: 2.2em;
+            }
+        }
+
+        /* Salesforce Cloud Pattern */
+        .sf-clouds {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.1;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+        }
+
+        .powered-by {
+            font-size: 0.75em;
+            color: #706e6b;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        /* Header and Footer Images */
+        .agentforce-header {
+            width: 100%;
+            max-width: 900px;
+            max-height: 150px;
+            margin: 0 auto 20px auto;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            animation: fadeIn 0.8s ease;
+        }
+
+        .agentforce-header img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .agentforce-footer {
+            width: 100%;
+            max-width: 1200px;
+            margin: 50px auto 30px auto;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            background: white;
+            padding: 20px;
+        }
+
+        .agentforce-footer img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .footer-text {
+            text-align: center;
+            color: white;
+            margin-top: 20px;
+            font-size: 1em;
+            opacity: 0.8;
+        }
+
+        /* Agent Character Images */
+        .agent-character {
+            width: 100px;
+            height: 100px;
+            object-fit: contain;
+            position: absolute;
+            top: 20px;
+            right: 120px;
+            opacity: 0.9;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .agent-character {
+                width: 70px;
+                height: 70px;
+                right: 90px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="sf-clouds">
+        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <pattern id="clouds" x="0" y="0" width="200" height="200" patternUnits="userSpaceOnUse">
+                    <circle cx="50" cy="50" r="30" fill="white" opacity="0.05"/>
+                    <circle cx="150" cy="100" r="40" fill="white" opacity="0.05"/>
+                    <circle cx="100" cy="150" r="25" fill="white" opacity="0.05"/>
+                </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#clouds)"/>
+        </svg>
+    </div>
+
+    <div class="container">
+        <!-- Agentforce Header Banner -->
+        <div class="agentforce-header">
+            <img src="REF-AWT25-H2-CHI-CMP-Welcome-Bnr-360x60-V1_Front.png" alt="Agentforce Welcome Banner">
+        </div>
+
+        <h1>Salesforce Agentforce Development Flow</h1>
+        <p class="subtitle">Transform ideas and issues into deployed solutions with AI-powered automation</p>
+
+        <div class="flow-container" id="flowContainer">
+            <!-- Stage 1: Dual Sources -->
+            <div class="dual-source-container">
+                <!-- Idea Exchange -->
+                <div class="stage source active" data-stage="1a">
+                    <span class="status-badge active">Active</span>
+                    <div class="stage-header">
+                        <div class="stage-number">1A</div>
+                        <div class="stage-title-container">
+                            <div class="stage-title">
+                                <span class="icon">💡</span>
+                                <span>Idea Exchange</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stage-description">
+                        Community portal where members, customers, and partners submit innovative ideas and feature requests for Salesforce products.
+                    </div>
+                    <div class="stage-details">
+                        <strong>What happens here:</strong>
+                        <ul style="margin-left: 20px; margin-top: 10px; line-height: 2;">
+                            <li>Community submits ideas and feature requests</li>
+                            <li>Ideas are voted on by the community</li>
+                            <li>Popular ideas are collected for analysis</li>
+                            <li>Ideas are categorized by product area</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Known Issues Portal -->
+                <div class="stage source active" data-stage="1b">
+                    <span class="status-badge active">Active</span>
+                    <div class="stage-header">
+                        <div class="stage-number">1B</div>
+                        <div class="stage-title-container">
+                            <div class="stage-title">
+                                <span class="icon">🐛</span>
+                                <span>Known Issues</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stage-description">
+                        Portal tracking reported bugs, technical issues, and system problems that need immediate attention and resolution.
+                    </div>
+                    <div class="stage-details">
+                        <strong>What happens here:</strong>
+                        <ul style="margin-left: 20px; margin-top: 10px; line-height: 2;">
+                            <li>Users report bugs and technical issues</li>
+                            <li>Issues are tracked and categorized</li>
+                            <li>Critical problems are escalated</li>
+                            <li>Severity and impact are assessed</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dual-arrows">
+                <div class="arrow active" id="arrow1a"></div>
+                <div class="arrow active" id="arrow1b"></div>
+            </div>
+
+            <!-- Stage 2: PM Agent -->
+            <div class="stage active" data-stage="2">
+                <span class="status-badge active">Active</span>
+                <img src="AgentAstro_Careforce_8K_Flip_v002.0015.png" alt="PM Agent Character" class="agent-character">
+                <div class="stage-header">
+                    <div class="stage-number">2</div>
+                    <div class="stage-title-container">
+                        <div class="powered-by">Powered by Agentforce</div>
+                        <div class="stage-title">
+                            <span class="icon">🎯</span>
+                            <span>PM Agent</span>
+                            <span class="agentforce-badge">
+                                <span class="agentforce-logo">⚡</span>
+                                <span>AGENTFORCE</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stage-description">
+                    Intelligent Product Management agent that analyzes inputs from both portals, evaluates feasibility, and prioritizes all incoming ideas and issues using advanced AI.
+                </div>
+                <div class="stage-details">
+                    <strong>Agent Capabilities:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px; line-height: 2;">
+                        <li>📊 <strong>Analysis:</strong> Evaluates ideas and issues for feasibility, impact, and alignment</li>
+                        <li>🔍 <strong>Market Research:</strong> Analyzes similar features and competitive landscape</li>
+                        <li>⚖️ <strong>Prioritization:</strong> Ranks items based on business value, urgency, and effort</li>
+                        <li>🔗 <strong>Correlation:</strong> Identifies connections between ideas and known issues</li>
+                        <li>📝 <strong>Specification:</strong> Creates detailed requirements and user stories</li>
+                        <li>✅ <strong>Approval:</strong> Routes high-priority items for development</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="arrow active" id="arrow2"></div>
+
+            <!-- Stage 3: Developer Agent -->
+            <div class="stage" data-stage="3">
+                <span class="status-badge pending">Pending</span>
+                <img src="AgentAstro_Careforce_8K_Flip_v002.0015.png" alt="Developer Agent Character" class="agent-character">
+                <div class="stage-header">
+                    <div class="stage-number">3</div>
+                    <div class="stage-title-container">
+                        <div class="powered-by">Powered by Agentforce</div>
+                        <div class="stage-title">
+                            <span class="icon">⚡</span>
+                            <span>Developer Agent</span>
+                            <span class="agentforce-badge">
+                                <span class="agentforce-logo">⚡</span>
+                                <span>AGENTFORCE</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stage-description">
+                    Autonomous development agent that architects, codes, tests, and documents the solution using cutting-edge AI-powered development tools.
+                </div>
+                <div class="stage-details">
+                    <strong>Development Process:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px; line-height: 2; margin-bottom: 20px;">
+                        <li>🏗️ <strong>Architecture Design:</strong> Plans the technical solution and system design</li>
+                        <li>💻 <strong>Code Generation:</strong> Writes high-quality, production-ready code</li>
+                        <li>🧪 <strong>Testing:</strong> Creates and runs comprehensive test suites</li>
+                        <li>📚 <strong>Documentation:</strong> Generates technical and user documentation</li>
+                    </ul>
+                    <strong>Powered by Advanced AI Tools:</strong>
+                    <div class="tools-list">
+                        <span class="tool">
+                            <span class="tool-logo">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M3 3l7 7-7 7v-7l7-7-7 7z"/>
+                                    <path d="M11 11l10 10-10-10 10-10-10 10z"/>
+                                </svg>
+                            </span>
+                            <span>Cursor AI</span>
+                        </span>
+                        <span class="tool">
+                            <span class="tool-logo">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8 0-1.48.41-2.86 1.12-4.06l10.94 10.94C14.86 19.59 13.48 20 12 20zm6.88-3.94L7.94 5.12C9.14 4.41 10.52 4 12 4c4.41 0 8 3.59 8 8 0 1.48-.41 2.86-1.12 4.06z"/>
+                                </svg>
+                            </span>
+                            <span>Windsurf</span>
+                        </span>
+                        <span class="tool">
+                            <span class="tool-logo">🔌</span>
+                            <span>MCP</span>
+                        </span>
+                        <span class="tool">
+                            <span class="tool-logo">🤖</span>
+                            <span>GitHub Copilot</span>
+                        </span>
+                        <span class="tool">
+                            <span class="tool-logo">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <circle cx="12" cy="12" r="3"/>
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+                                    <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4z"/>
+                                </svg>
+                            </span>
+                            <span>Agentforce Vibes</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arrow" id="arrow3"></div>
+
+            <!-- Stage 4: Human Review -->
+            <div class="stage" data-stage="4">
+                <span class="status-badge pending">Pending</span>
+                <div class="stage-header">
+                    <div class="stage-number">4</div>
+                    <div class="stage-title-container">
+                        <div class="stage-title">
+                            <span class="icon">👥</span>
+                            <span>Human in the Loop</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stage-description">
+                    Expert human review and validation ensures quality, security, compliance, and alignment with Salesforce standards before deployment.
+                </div>
+                <div class="stage-details">
+                    <strong>Review Checklist:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px; line-height: 2;">
+                        <li>✅ <strong>Code Review:</strong> Quality, maintainability, and best practices</li>
+                        <li>🔒 <strong>Security Audit:</strong> Vulnerability scanning and compliance checks</li>
+                        <li>🎨 <strong>UX Review:</strong> User experience and interface validation</li>
+                        <li>📋 <strong>Requirements Check:</strong> Ensures all specifications are met</li>
+                        <li>🚀 <strong>Performance:</strong> Load testing and optimization validation</li>
+                        <li>✍️ <strong>Final Approval:</strong> Executive sign-off for production deployment</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="arrow" id="arrow4"></div>
+
+            <!-- Stage 5: Deploy & Ship -->
+            <div class="stage" data-stage="5">
+                <span class="status-badge pending">Pending</span>
+                <div class="stage-header">
+                    <div class="stage-number">5</div>
+                    <div class="stage-title-container">
+                        <div class="stage-title">
+                            <span class="icon">🚀</span>
+                            <span>Deploy & Ship</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stage-description">
+                    Solution is deployed to production through automated CI/CD pipelines and made available to users worldwide.
+                </div>
+                <div class="stage-details">
+                    <strong>Deployment Pipeline:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px; line-height: 2;">
+                        <li>🔧 <strong>CI/CD Pipeline:</strong> Automated build, test, and deployment</li>
+                        <li>🌐 <strong>Staging Deployment:</strong> Final testing in production-like environment</li>
+                        <li>📊 <strong>Monitoring Setup:</strong> Performance tracking and error monitoring</li>
+                        <li>🎉 <strong>Production Release:</strong> Feature goes live to all users</li>
+                        <li>📣 <strong>Communication:</strong> Release notes and user notifications</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="arrow" id="arrow5"></div>
+
+            <!-- Stage 6: Community in the Loop -->
+            <div class="stage" data-stage="6">
+                <span class="status-badge pending">Pending</span>
+                <div class="stage-header">
+                    <div class="stage-number">6</div>
+                    <div class="stage-title-container">
+                        <div class="stage-title">
+                            <span class="icon">💬</span>
+                            <span>Community in the Loop</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stage-description">
+                    Community engagement and feedback collection to measure success, gather insights, and identify opportunities for continuous improvement.
+                </div>
+                <div class="stage-details">
+                    <strong>Community Engagement:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px; line-height: 2;">
+                        <li>📊 <strong>Usage Analytics:</strong> Monitor feature adoption and user engagement</li>
+                        <li>💬 <strong>Feedback Collection:</strong> Gather user feedback through surveys and channels</li>
+                        <li>⭐ <strong>User Satisfaction:</strong> Measure NPS and satisfaction scores</li>
+                        <li>🐛 <strong>Issue Tracking:</strong> Monitor and respond to reported problems</li>
+                        <li>🔄 <strong>Iteration Planning:</strong> Identify improvements for next release</li>
+                        <li>🎯 <strong>Community Updates:</strong> Share success stories and respond to original idea submitters</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="prevBtn" onclick="previousStage()" disabled>← Previous</button>
+            <button id="nextBtn" onclick="nextStage()">Next →</button>
+            <button id="resetBtn" onclick="resetFlow()">🔄 Reset</button>
+        </div>
+
+        <div class="completion-message" id="completionMessage">
+            <div class="completion-icon">🎉</div>
+            <h2>Workflow Complete!</h2>
+            <p>
+                From community ideas and issues through to deployment and feedback - the <span class="highlight">Salesforce Agentforce</span> development flow 
+                creates a complete circle of innovation with AI-powered efficiency, human oversight, and continuous community engagement.
+            </p>
+            <button onclick="resetFlow()">Start Over</button>
+        </div>
+
+        <!-- Agentforce Footer -->
+        <div class="agentforce-footer">
+            <img src="af1.jpg" alt="Agentforce Team - AI Agents Ready to Transform Your Development">
+        </div>
+        <div class="footer-text">
+            Powered by Salesforce Agentforce 🤖
+        </div>
+    </div>
+
+    <script>
+        let currentStage = 1;
+        const totalStages = 6;
+        const stageMap = ['1a', '1b', '2', '3', '4', '5', '6'];
+
+        function updateStage(stage) {
+            const stages = document.querySelectorAll('.stage');
+            const arrows = document.querySelectorAll('.arrow');
+            
+            stages.forEach((stageEl) => {
+                const stageId = stageEl.getAttribute('data-stage');
+                const statusBadge = stageEl.querySelector('.status-badge');
+                const stageIndex = stageMap.indexOf(stageId);
+                
+                if (stageIndex < stage) {
+                    stageEl.classList.remove('active');
+                    stageEl.classList.add('completed');
+                    statusBadge.className = 'status-badge completed';
+                    statusBadge.textContent = 'Completed';
+                } else if (stageIndex === stage) {
+                    stageEl.classList.add('active');
+                    stageEl.classList.remove('completed');
+                    statusBadge.className = 'status-badge active';
+                    statusBadge.textContent = 'Active';
+                } else {
+                    stageEl.classList.remove('active', 'completed');
+                    statusBadge.className = 'status-badge pending';
+                    statusBadge.textContent = 'Pending';
+                }
+            });
+
+            // Handle arrows
+            arrows.forEach((arrow) => {
+                const arrowId = arrow.id;
+                if (arrowId === 'arrow1a' || arrowId === 'arrow1b') {
+                    arrow.classList.toggle('active', stage >= 1);
+                } else if (arrowId === 'arrow2') {
+                    arrow.classList.toggle('active', stage >= 2);
+                } else if (arrowId === 'arrow3') {
+                    arrow.classList.toggle('active', stage >= 3);
+                } else if (arrowId === 'arrow4') {
+                    arrow.classList.toggle('active', stage >= 4);
+                } else if (arrowId === 'arrow5') {
+                    arrow.classList.toggle('active', stage >= 5);
+                }
+            });
+
+            // Update buttons
+            document.getElementById('prevBtn').disabled = stage === 0;
+            document.getElementById('nextBtn').disabled = stage === totalStages;
+
+            // Show completion message
+            if (stage === totalStages) {
+                setTimeout(() => {
+                    document.getElementById('completionMessage').classList.add('show');
+                }, 500);
+            } else {
+                document.getElementById('completionMessage').classList.remove('show');
+            }
+
+            // Scroll to active stage
+            const activeStage = document.querySelector('.stage.active');
+            if (activeStage) {
+                activeStage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function nextStage() {
+            if (currentStage < totalStages) {
+                currentStage++;
+                updateStage(currentStage);
+            }
+        }
+
+        function previousStage() {
+            if (currentStage > 0) {
+                currentStage--;
+                updateStage(currentStage);
+            }
+        }
+
+        function resetFlow() {
+            currentStage = 0;
+            updateStage(currentStage);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Add click handlers to stages
+        document.querySelectorAll('.stage').forEach((stage) => {
+            stage.addEventListener('click', () => {
+                const stageId = stage.getAttribute('data-stage');
+                currentStage = stageMap.indexOf(stageId);
+                updateStage(currentStage);
+            });
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') nextStage();
+            if (e.key === 'ArrowLeft') previousStage();
+            if (e.key === 'r' || e.key === 'R') resetFlow();
+        });
+
+        // Initialize - start with both sources active
+        updateStage(currentStage);
+    </script>
+</body>
+</html>
